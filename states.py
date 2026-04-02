@@ -1,4 +1,4 @@
-﻿from aiogram.fsm.state import State, StatesGroup
+from aiogram.fsm.state import State, StatesGroup
 
 
 class AddMailboxState(StatesGroup):
@@ -7,7 +7,6 @@ class AddMailboxState(StatesGroup):
     password = State()
     imap_host = State()
     imap_port = State()
-    account_type = State()
     account_name = State()
 
 

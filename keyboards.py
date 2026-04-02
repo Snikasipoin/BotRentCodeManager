@@ -1,7 +1,23 @@
-from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 from models import Mailbox
+
+
+ADD_MAIL_LABEL = "Добавить почту"
+LIST_MAIL_LABEL = "Мои почты"
+HOME_LABEL = "Главное меню"
+BACK_TO_LIST_LABEL = "К списку почт"
+
+
+def main_menu_keyboard() -> ReplyKeyboardMarkup:
+    return ReplyKeyboardMarkup(
+        keyboard=[
+            [KeyboardButton(text=ADD_MAIL_LABEL), KeyboardButton(text=LIST_MAIL_LABEL)],
+            [KeyboardButton(text=HOME_LABEL)],
+        ],
+        resize_keyboard=True,
+    )
 
 
 def mailbox_list_keyboard(mailboxes: list[Mailbox]) -> InlineKeyboardMarkup:
@@ -9,16 +25,19 @@ def mailbox_list_keyboard(mailboxes: list[Mailbox]) -> InlineKeyboardMarkup:
     for mailbox in mailboxes:
         status = "ON" if mailbox.is_active else "OFF"
         builder.button(text=f"{mailbox.id}. {mailbox.title} [{status}]", callback_data=f"mailbox:{mailbox.id}")
+    builder.button(text="Главное меню", callback_data="nav:home")
     builder.adjust(1)
     return builder.as_markup()
 
 
 def mailbox_actions_keyboard(mailbox_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text="Р’РєР»/Р’С‹РєР»", callback_data=f"toggle:{mailbox_id}")
-    builder.button(text="РР·РјРµРЅРёС‚СЊ РЅР°Р·РІР°РЅРёРµ", callback_data=f"edit_title:{mailbox_id}")
-    builder.button(text="РР·РјРµРЅРёС‚СЊ Р°РєРєР°СѓРЅС‚", callback_data=f"edit_account:{mailbox_id}")
-    builder.button(text="РР·РјРµРЅРёС‚СЊ РїР°СЂРѕР»СЊ", callback_data=f"edit_password:{mailbox_id}")
-    builder.button(text="РЈРґР°Р»РёС‚СЊ", callback_data=f"delete:{mailbox_id}")
+    builder.button(text="Вкл/Выкл", callback_data=f"toggle:{mailbox_id}")
+    builder.button(text="Изменить название", callback_data=f"edit_title:{mailbox_id}")
+    builder.button(text="Изменить аккаунт", callback_data=f"edit_account:{mailbox_id}")
+    builder.button(text="Изменить пароль", callback_data=f"edit_password:{mailbox_id}")
+    builder.button(text="Удалить", callback_data=f"delete:{mailbox_id}")
+    builder.button(text="К списку почт", callback_data="nav:list")
+    builder.button(text="Главное меню", callback_data="nav:home")
     builder.adjust(1)
     return builder.as_markup()

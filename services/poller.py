@@ -81,8 +81,9 @@ class MailPoller:
                         await self.bot.send_message(
                             mailbox.owner_telegram_id,
                             self._build_notification_text(
-                                account_type=mailbox.account_type,
+                                provider=parsed.provider,
                                 account_name=mailbox.account_name,
+                                mailbox_title=mailbox.title,
                                 received_at=parsed.received_at,
                                 code=parsed.code,
                             ),
@@ -92,11 +93,13 @@ class MailPoller:
                 except Exception as exc:
                     logger.exception("Mailbox processing failed for %s: %s", mailbox.email, exc)
 
-    def _build_notification_text(self, account_type: str, account_name: str, received_at, code: str) -> str:
+    def _build_notification_text(self, provider: str, account_name: str, mailbox_title: str, received_at, code: str) -> str:
         local_time = received_at.strftime("%Y-%m-%d %H:%M:%S")
+        provider_name = provider.upper()
         return (
-            f'Р’С…РѕРґ РІ Р°РєРєР°СѓРЅС‚ "{account_type}"\n'
-            f"РРјСЏ Р°РєРєР°СѓРЅС‚Р°: {account_name}\n"
-            f"Р’СЂРµРјСЏ: {local_time}\n"
-            f"РљРѕРґ: {code}"
+            f"Найден код {provider_name}\n"
+            f"Аккаунт: {account_name}\n"
+            f"Почта: {mailbox_title}\n"
+            f"Время: {local_time}\n"
+            f"Код: {code}"
         )

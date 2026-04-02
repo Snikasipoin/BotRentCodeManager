@@ -1,12 +1,28 @@
-from aiogram import Router
+from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message
+from aiogram.types import CallbackQuery, Message
 
 from config import get_settings
+from keyboards import ADD_MAIL_LABEL, HOME_LABEL, LIST_MAIL_LABEL, main_menu_keyboard
 
 
 router = Router()
+
+
+MAIN_MENU_TEXT = (
+    "Бот готов к работе.\n\n"
+    "Что можно сделать:\n"
+    f"• {ADD_MAIL_LABEL} - добавить новый ящик\n"
+    f"• {LIST_MAIL_LABEL} - открыть список сохраненных почт\n"
+    "/cancel - отменить текущее действие"
+)
+
+
+HELP_TEXT = (
+    "Добавляй Outlook/Hotmail ящики, а бот будет автоматически отслеживать письма Steam Guard и FACEIT.\n\n"
+    "Тип письма вручную выбирать больше не нужно: бот сам определяет, что пришло."
+)
 
 
 def is_allowed_user(user_id: int) -> bool:
@@ -19,36 +35,34 @@ def is_allowed_user(user_id: int) -> bool:
 
 async def ensure_access(message: Message) -> bool:
     if not message.from_user:
-        await message.answer("РќРµ СѓРґР°Р»РѕСЃСЊ РѕРїСЂРµРґРµР»РёС‚СЊ Telegram РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ.")
+        await message.answer("Не удалось определить Telegram пользователя.", reply_markup=main_menu_keyboard())
         return False
     if not is_allowed_user(message.from_user.id):
-        await message.answer("Р”РѕСЃС‚СѓРї Р·Р°РїСЂРµС‰РµРЅ.")
+        await message.answer("Доступ запрещен.", reply_markup=main_menu_keyboard())
         return False
     return True
 
 
+async def send_main_menu(target: Message | CallbackQuery, text: str = MAIN_MENU_TEXT) -> None:
+    if isinstance(target, CallbackQuery):
+        await target.message.answer(text, reply_markup=main_menu_keyboard())
+    else:
+        await target.answer(text, reply_markup=main_menu_keyboard())
+
+
 @router.message(Command("start"))
+@router.message(F.text == HOME_LABEL)
 async def cmd_start(message: Message) -> None:
     if not await ensure_access(message):
         return
-    text = (
-        "Р‘РѕС‚ РіРѕС‚РѕРІ Рє СЂР°Р±РѕС‚Рµ.\n\n"
-        "РљРѕРјР°РЅРґС‹:\n"
-        "/add_mail - РґРѕР±Р°РІРёС‚СЊ РїРѕС‡С‚Сѓ\n"
-        "/list_mail - СЃРїРёСЃРѕРє РїРѕС‡С‚\n"
-        "/help - РїРѕРјРѕС‰СЊ\n"
-        "/cancel - РѕС‚РјРµРЅРёС‚СЊ С‚РµРєСѓС‰РµРµ РґРµР№СЃС‚РІРёРµ"
-    )
-    await message.answer(text)
+    await send_main_menu(message)
 
 
 @router.message(Command("help"))
 async def cmd_help(message: Message) -> None:
     if not await ensure_access(message):
         return
-    await message.answer(
-        "Р”РѕР±Р°РІР»СЏР№ Outlook/Hotmail СЏС‰РёРєРё, СѓРєР°Р·С‹РІР°Р№ С‚РёРї Р°РєРєР°СѓРЅС‚Р° steam/faceit, Р° Р±РѕС‚ Р±СѓРґРµС‚ СЃР°Рј РїСЂРѕРІРµСЂСЏС‚СЊ РїРёСЃСЊРјР° Рё РїСЂРёСЃС‹Р»Р°С‚СЊ РєРѕРґ."
-    )
+    await message.answer(HELP_TEXT, reply_markup=main_menu_keyboard())
 
 
 @router.message(Command("cancel"))
@@ -56,4 +70,4 @@ async def cmd_cancel(message: Message, state: FSMContext) -> None:
     if not await ensure_access(message):
         return
     await state.clear()
-    await message.answer("РўРµРєСѓС‰РµРµ РґРµР№СЃС‚РІРёРµ РѕС‚РјРµРЅРµРЅРѕ.")
+    await message.answer("Текущее действие отменено.", reply_markup=main_menu_keyboard())

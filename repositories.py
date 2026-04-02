@@ -15,7 +15,7 @@ class MailboxRepository:
         self.session = session
         self.cipher = SecretCipher()
 
-    async def create_mailbox(self, owner_telegram_id: int, title: str, email: str, password: str, imap_host: str, imap_port: int, account_type: str, account_name: str) -> Mailbox:
+    async def create_mailbox(self, owner_telegram_id: int, title: str, email: str, password: str, imap_host: str, imap_port: int, account_name: str) -> Mailbox:
         mailbox = Mailbox(
             owner_telegram_id=owner_telegram_id,
             title=title,
@@ -23,7 +23,7 @@ class MailboxRepository:
             encrypted_password=self.cipher.encrypt(password),
             imap_host=imap_host,
             imap_port=imap_port,
-            account_type=account_type,
+            account_type="auto",
             account_name=account_name,
             is_active=True,
         )

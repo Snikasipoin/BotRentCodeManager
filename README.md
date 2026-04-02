@@ -1,4 +1,4 @@
-﻿# Telegram bot для кодов Steam Guard и FACEIT
+# Telegram bot для кодов Steam Guard и FACEIT
 
 ## Что умеет
 
@@ -52,9 +52,13 @@ python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 
 ## Запуск
 
+Основной и рекомендуемый вариант:
+
 ```bash
-python -m app.main
+python main.py
 ```
+
+Если хостинг запускает файл напрямую через `python main.py`, проект тоже стартует корректно: `main.py` сам добавляет корень проекта в `sys.path`.
 
 ## Команды бота
 
@@ -66,15 +70,15 @@ python -m app.main
 
 ## Архитектура
 
-- `app/main.py` - точка входа
-- `app/config.py` - конфигурация
-- `app/db.py` - подключение к БД
-- `app/models.py` - SQLAlchemy-модели
-- `app/repositories.py` - работа с данными
-- `app/handlers/` - Telegram handlers
-- `app/services/imap_client.py` - чтение писем через IMAP
-- `app/services/code_parser.py` - поиск кодов Steam Guard / FACEIT
-- `app/services/poller.py` - фоновая проверка почт
+- `main.py` - точка входа
+- `config.py` - конфигурация
+- `db.py` - подключение к БД
+- `models.py` - SQLAlchemy-модели
+- `repositories.py` - работа с данными
+- `handlers/` - Telegram handlers
+- `services/imap_client.py` - чтение писем через IMAP
+- `services/code_parser.py` - поиск кодов Steam Guard / FACEIT
+- `services/poller.py` - фоновая проверка почт
 
 ## Безопасность
 

@@ -1,18 +1,28 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 import logging
+import sys
+from pathlib import Path
 
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 
-from app.config import get_settings
-from app.db import engine
-from app.handlers.common import router as common_router
-from app.handlers.mailboxes import router as mailbox_router
-from app.models import Base
-from app.services.poller import MailPoller
+# Hosting panels sometimes start this file directly via `python main.py`.
+# In that mode Python does not add the project root to `sys.path`, so
+# absolute imports from the project root would fail.
+if __package__ is None or __package__ == "":
+    project_root = Path(__file__).resolve().parent
+    if str(project_root) not in sys.path:
+        sys.path.insert(0, str(project_root))
+
+from config import get_settings
+from db import engine
+from handlers.common import router as common_router
+from handlers.mailboxes import router as mailbox_router
+from models import Base
+from services.poller import MailPoller
 
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s | %(levelname)s | %(name)s | %(message)s")

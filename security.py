@@ -1,6 +1,6 @@
-﻿from cryptography.fernet import Fernet
+from cryptography.fernet import Fernet
 
-from app.config import get_settings
+from config import get_settings
 
 
 class SecretCipher:

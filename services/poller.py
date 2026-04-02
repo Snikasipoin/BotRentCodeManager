@@ -1,14 +1,14 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 import logging
 
 from aiogram import Bot
 
-from app.db import SessionLocal
-from app.repositories import DeliveryRepository, MailboxRepository
-from app.services.code_parser import parse_security_code
-from app.services.imap_client import OutlookImapClient
+from db import SessionLocal
+from repositories import DeliveryRepository, MailboxRepository
+from services.code_parser import parse_security_code
+from services.imap_client import OutlookImapClient
 
 
 logger = logging.getLogger(__name__)

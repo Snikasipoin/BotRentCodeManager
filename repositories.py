@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from datetime import datetime, timezone
 
@@ -6,8 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import CodeDelivery, Mailbox
-from app.security import SecretCipher
+from models import CodeDelivery, Mailbox
+from security import SecretCipher
 
 
 class MailboxRepository:

@@ -1,7 +1,7 @@
-﻿from aiogram.types import InlineKeyboardMarkup
+from aiogram.types import InlineKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
-from app.models import Mailbox
+from models import Mailbox
 
 
 def mailbox_list_keyboard(mailboxes: list[Mailbox]) -> InlineKeyboardMarkup:

@@ -1,15 +1,15 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import CallbackQuery, Message
 
-from app.db import SessionLocal
-from app.keyboards import mailbox_actions_keyboard, mailbox_list_keyboard
-from app.repositories import MailboxRepository
-from app.states import AddMailboxState, EditMailboxState
-from app.handlers.common import ensure_access, is_allowed_user
+from db import SessionLocal
+from keyboards import mailbox_actions_keyboard, mailbox_list_keyboard
+from repositories import MailboxRepository
+from states import AddMailboxState, EditMailboxState
+from handlers.common import ensure_access, is_allowed_user
 
 
 router = Router()

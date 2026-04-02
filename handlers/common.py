@@ -1,9 +1,9 @@
-﻿from aiogram import Router
+from aiogram import Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.types import Message
 
-from app.config import get_settings
+from config import get_settings
 
 
 router = Router()

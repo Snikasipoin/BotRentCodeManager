@@ -49,8 +49,14 @@ async def main() -> None:
     dp.include_router(common_router)
     dp.include_router(mailbox_router)
 
-    dp.startup.register(lambda _: on_startup(bot, poller))
-    dp.shutdown.register(lambda _: on_shutdown(poller))
+    async def startup_handler(**_: object) -> None:
+        await on_startup(bot, poller)
+
+    async def shutdown_handler(**_: object) -> None:
+        await on_shutdown(poller)
+
+    dp.startup.register(startup_handler)
+    dp.shutdown.register(shutdown_handler)
 
     await dp.start_polling(bot)
 

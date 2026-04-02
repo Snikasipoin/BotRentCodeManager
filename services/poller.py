@@ -97,9 +97,9 @@ class MailPoller:
         local_time = received_at.strftime("%Y-%m-%d %H:%M:%S")
         provider_name = provider.upper()
         return (
-            f"Найден код {provider_name}\n"
-            f"Аккаунт: {account_name}\n"
-            f"Почта: {mailbox_title}\n"
-            f"Время: {local_time}\n"
-            f"Код: {code}"
+            f"\u041d\u0430\u0439\u0434\u0435\u043d \u043a\u043e\u0434 {provider_name}\n"
+            f"\u0410\u043a\u043a\u0430\u0443\u043d\u0442: {account_name}\n"
+            f"\u041f\u043e\u0447\u0442\u0430: {mailbox_title}\n"
+            f"\u0412\u0440\u0435\u043c\u044f: {local_time}\n"
+            f"\u041a\u043e\u0434: {code}"
         )

@@ -1,6 +1,7 @@
-﻿from functools import lru_cache
+from functools import lru_cache
 import os
 
+from cryptography.fernet import Fernet
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -29,6 +30,19 @@ class Settings(BaseSettings):
             for item in self.owner_telegram_ids_raw.split(",")
             if item.strip()
         }
+
+    @field_validator("encryption_key")
+    @classmethod
+    def validate_encryption_key(cls, value: str) -> str:
+        normalized = value.strip()
+        try:
+            Fernet(normalized.encode())
+        except Exception as exc:
+            raise ValueError(
+                "ENCRYPTION_KEY must be a valid Fernet key. Generate it with: "
+                "python -c \"from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())\""
+            ) from exc
+        return normalized
 
     @field_validator("poll_interval_seconds")
     @classmethod

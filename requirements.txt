@@ -1,0 +1,6 @@
+aiogram==3.18.0
+SQLAlchemy==2.0.38
+aiosqlite==0.21.0
+pydantic==2.10.6
+pydantic-settings==2.7.1
+cryptography==44.0.0

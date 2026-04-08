@@ -1,97 +1,65 @@
-# Telegram bot для кодов Steam Guard и FACEIT
+# CS2 Rent Bot for FunPay
 
-## Что умеет
+Полноценный Telegram-бот для автоматизации аренды аккаунтов CS2 (Steam + Faceit) через FunPay.
 
-- добавлять много почтовых ящиков Outlook / Hotmail;
-- хранить отдельное имя аккаунта и тип аккаунта (`steam` или `faceit`);
-- включать и отключать автоматическую проверку;
-- удалять и редактировать почты через Telegram;
-- автоматически искать коды в письмах и присылать их в Telegram;
-- не дублировать уже отправленные коды.
+## Что в проекте
 
-## Важное замечание по Outlook / Hotmail
+- `bot/` — основное приложение
+- `alembic/` — миграции БД
+- `.env.example` — пример конфигурации
+- `Dockerfile` и `docker-compose.yml` — контейнеризация
+- `docs/DEPLOY_ENV.md` — что заполнять в переменных окружения на хостинге
+- `docs/OUTLOOK_IMAP_SETUP.md` — как настраивать Outlook / Hotmail для получения кодов
 
-Для Outlook / Hotmail надежнее использовать пароль приложения и IMAP, если на аккаунте включена двухфакторная аутентификация.
+## Основной стек
 
-Рекомендуемые параметры:
+- Python 3.12+
+- aiogram 3.x
+- SQLAlchemy 2.x + Alembic
+- Redis
+- APScheduler
+- FunPayAPI
+- imap-tools
+- loguru
+- pydantic-settings
+- cryptography
+- Docker
 
-- `imap_host`: `imap-mail.outlook.com`
-- `imap_port`: `993`
+## Быстрый старт
 
-Если Microsoft ограничит доступ по IMAP для конкретного аккаунта, следующим шагом нужно будет перейти на Microsoft Graph + OAuth. Архитектура проекта уже разделена на слои, поэтому такую замену можно сделать без переписывания Telegram-части.
+1. Скопируй `.env.example` в `.env`.
+2. Сгенерируй ключ шифрования:
+   ```bash
+   python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+   ```
+3. Заполни `.env`.
+4. Подними сервисы:
+   ```bash
+   docker compose up --build -d
+   ```
+5. Примени миграции:
+   ```bash
+   docker compose exec bot alembic upgrade head
+   ```
 
-## Установка
+## Запуск без Docker
 
 ```bash
 python -m venv .venv
-.venv\Scripts\activate
 pip install -r requirements.txt
-copy .env.example .env
+alembic upgrade head
+python -m bot.main
 ```
 
-## Настройка `.env`
+## Настройка FunPay
 
-```env
-BOT_TOKEN=your_telegram_bot_token
-DATABASE_URL=sqlite+aiosqlite:///./bot.db
-ENCRYPTION_KEY=replace_with_fernet_key
-POLL_INTERVAL_SECONDS=15
-ADMIN_ID=123456789,987654321
-```
+1. Авторизуйся в FunPay в браузере.
+2. Открой DevTools -> Application -> Cookies.
+3. Найди `golden_key`.
+4. Скопируй его в `.env` как `FUNPAY_GOLDEN_KEY`.
+5. При необходимости пропиши `FUNPAY_USER_AGENT` из того же браузера.
 
-- `ADMIN_ID` поддерживает один или несколько Telegram ID через запятую;
-- секреты хранятся только в локальном `.env` и не должны коммититься в git.
+## Документация
 
-## Генерация ключа шифрования
-
-```bash
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-```
-
-Скопируй значение в `ENCRYPTION_KEY`.
-
-## Запуск
-
-Основной и рекомендуемый вариант:
-
-```bash
-python main.py
-```
-
-Если хостинг запускает файл напрямую через `python main.py`, проект тоже стартует корректно: `main.py` сам добавляет корень проекта в `sys.path`.
-
-## Команды бота
-
-- `/start` - старт и краткая справка
-- `/help` - список команд
-- `/add_mail` - добавить почту
-- `/list_mail` - показать все почты
-- `/cancel` - отменить текущее действие
-
-## Архитектура
-
-- `main.py` - точка входа
-- `config.py` - конфигурация
-- `db.py` - подключение к БД
-- `models.py` - SQLAlchemy-модели
-- `repositories.py` - работа с данными
-- `handlers/` - Telegram handlers
-- `services/imap_client.py` - чтение писем через IMAP
-- `services/code_parser.py` - поиск кодов Steam Guard / FACEIT
-- `services/poller.py` - фоновая проверка почт
-
-## Безопасность
-
-- пароли почты хранятся в БД в зашифрованном виде через `Fernet`;
-- можно ограничить доступ к боту через `ADMIN_ID` или `OWNER_TELEGRAM_IDS`;
-- каждый пользователь видит и редактирует только свои почты;
-- уже обработанные письма не отправляются повторно.
-
-## Что улучшить дальше
-
-- перейти с SQLite на PostgreSQL для продакшена;
-- вынести фонового воркера в отдельный процесс;
-- добавить Redis для очередей и блокировок;
-- заменить IMAP на Microsoft Graph OAuth;
-- добавить аудит действий и rate limiting;
-- добавить healthcheck, Docker и Alembic миграции.
+- [DEPLOY_ENV.md](G:/MC/BOT_CODE/docs/DEPLOY_ENV.md)
+- [OUTLOOK_IMAP_SETUP.md](G:/MC/BOT_CODE/docs/OUTLOOK_IMAP_SETUP.md)

@@ -1,13 +1,13 @@
-from aiogram.types import InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
+﻿from aiogram.types import InlineKeyboardMarkup, KeyboardButton, ReplyKeyboardMarkup
 from aiogram.utils.keyboard import InlineKeyboardBuilder
 
 
-DASHBOARD = "📊 Дашборд"
-ACCOUNTS = "📋 Мои аккаунты"
-ORDERS = "📦 Активные заказы"
-HISTORY = "📜 История заказов"
-SETTINGS = "⚙️ Настройки"
-SEARCH = "🔍 Поиск"
+DASHBOARD = "Дашборд"
+ACCOUNTS = "Мои аккаунты"
+ORDERS = "Активные заказы"
+HISTORY = "История заказов"
+SETTINGS = "Настройки"
+SEARCH = "Поиск"
 STATS = "/stats"
 
 

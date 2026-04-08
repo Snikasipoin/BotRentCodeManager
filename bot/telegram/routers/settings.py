@@ -5,7 +5,7 @@ from aiogram.types import CallbackQuery, Message
 
 from bot.config import get_settings
 from bot.funpay.client import FunPayClient
-from bot.telegram.keyboards.main import SETTINGS, settings_actions
+from bot.telegram.keyboards.main import SETTINGS, settings_actions, main_menu
 
 router = Router()
 
@@ -22,6 +22,7 @@ async def settings_menu(message: Message) -> None:
         f"Часовой пояс: {settings.timezone_name}"
     )
     await message.answer(text, reply_markup=settings_actions())
+    await message.answer("Главное меню", reply_markup=main_menu())
 
 
 @router.callback_query(F.data == "settings:env")

@@ -1,10 +1,11 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import asyncio
 import threading
 from dataclasses import dataclass
 from typing import Any
 
+import aiohttp
 from loguru import logger
 
 from bot.config import get_settings
@@ -36,6 +37,8 @@ class NewMessagePayload:
 
 
 class FunPayClient:
+    DEFAULT_RENTAL_MINUTES = 60
+
     def __init__(self) -> None:
         self.settings = get_settings()
         self.account = None
@@ -47,7 +50,7 @@ class FunPayClient:
 
     async def start(self) -> None:
         if FunPayAccount is None or Runner is None:
-            logger.warning("FunPayAPI не доступна. Клиент FunPay будет работать в режиме заглушки.")
+            logger.warning("FunPayAPI недоступна. Клиент FunPay будет работать в режиме заглушки.")
             return
         self._loop = asyncio.get_running_loop()
         self.account = FunPayAccount(self.settings.funpay_golden_key, self.settings.funpay_user_agent)
@@ -75,30 +78,66 @@ class FunPayClient:
             except Exception as exc:
                 logger.exception("FunPay polling error: {}", exc)
 
+    @staticmethod
+    def _pick_attr(obj: Any, *names: str, default: Any = None) -> Any:
+        for name in names:
+            value = getattr(obj, name, None)
+            if value not in (None, "", []):
+                return value
+        return default
+
+    @classmethod
+    def _extract_rental_minutes(cls, event: Any) -> int:
+        minutes = cls._pick_attr(
+            event,
+            "rental_minutes",
+            "rent_minutes",
+            "minutes",
+            "duration_minutes",
+            default=None,
+        )
+        if minutes is None:
+            duration = cls._pick_attr(event, "duration", "rent_duration", default=None)
+            if isinstance(duration, (int, float)):
+                minutes = int(duration)
+        try:
+            minutes_int = int(minutes) if minutes is not None else cls.DEFAULT_RENTAL_MINUTES
+        except (TypeError, ValueError):
+            return cls.DEFAULT_RENTAL_MINUTES
+        return minutes_int if minutes_int > 0 else cls.DEFAULT_RENTAL_MINUTES
+
     async def _dispatch_raw_event(self, event: Any) -> None:
         class_name = event.__class__.__name__
-        logger.debug("FunPay event received: {}", class_name)
+        logger.debug("FunPay event received: {} payload={}", class_name, getattr(event, "__dict__", repr(event)))
         if class_name == "NewOrderEvent":
             payload = NewOrderPayload(
-                order_id=str(getattr(event, "order_id", getattr(event, "id", ""))),
-                chat_id=int(getattr(event, "node_id", getattr(event, "chat_id", 0))),
-                buyer_nickname=str(getattr(event, "buyer_username", getattr(event, "username", "buyer"))),
-                rental_minutes=int(getattr(event, "amount", 60) or 60),
+                order_id=str(self._pick_attr(event, "order_id", "id", default="")),
+                chat_id=int(self._pick_attr(event, "chat_id", "node_id", default=0) or 0),
+                buyer_nickname=str(
+                    self._pick_attr(
+                        event,
+                        "buyer_username",
+                        "username",
+                        "buyer",
+                        "nickname",
+                        default="buyer",
+                    )
+                ),
+                rental_minutes=self._extract_rental_minutes(event),
             )
             await self.events_queue.put(("new_order", payload))
             return
         if class_name == "NewMessageEvent":
-            message = getattr(event, "message", event)
-            text = str(getattr(message, "text", "") or "")
-            attachments = getattr(message, "attachments", None) or []
+            message = self._pick_attr(event, "message", default=event)
+            attachments = self._pick_attr(message, "attachments", default=[]) or []
             first_attachment = attachments[0] if attachments else None
             payload = NewMessagePayload(
-                chat_id=int(getattr(event, "chat_id", getattr(event, "node_id", 0))),
-                text=text,
+                chat_id=int(self._pick_attr(event, "chat_id", "node_id", default=0) or 0),
+                text=str(self._pick_attr(message, "text", default="") or ""),
                 has_photo=bool(attachments),
-                order_id=str(getattr(event, "order_id", "") or "") or None,
-                file_id=str(getattr(first_attachment, "id", "") or "") or None,
-                photo_url=str(getattr(first_attachment, "url", "") or "") or None,
+                order_id=str(self._pick_attr(event, "order_id", "id", default="") or "") or None,
+                file_id=str(self._pick_attr(first_attachment, "id", "file_id", default="") or "") or None,
+                photo_url=str(self._pick_attr(first_attachment, "url", "download_url", default="") or "") or None,
             )
             await self.events_queue.put(("new_message", payload))
 
@@ -111,8 +150,6 @@ class FunPayClient:
         await asyncio.to_thread(self.account.send_message, chat_id, text)
 
     async def download_photo(self, url: str, target_path: str) -> str:
-        import aiohttp
-
         async with aiohttp.ClientSession() as session:
             async with session.get(url, timeout=30) as response:
                 response.raise_for_status()

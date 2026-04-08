@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
+from loguru import logger
+
 from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -53,6 +55,13 @@ class OrderProcessor:
         await self.notify_admin_new_order(order)
         return order
 
+    async def notify_admins(self, text: str, reply_markup=None) -> None:
+        for admin_id in self.settings.admin_id:
+            try:
+                await self.telegram_bot.send_message(admin_id, text, reply_markup=reply_markup)
+            except Exception as exc:
+                logger.warning("Failed to notify admin {}: {}", admin_id, exc)
+
     async def notify_admin_new_order(self, order: Order) -> None:
         text = (
             "New FunPay order\n"
@@ -61,7 +70,7 @@ class OrderProcessor:
             f"Duration: {fmt_timedelta_minutes(order.rental_minutes)}\n"
             f"Status: {order.status.value}"
         )
-        await self.telegram_bot.send_message(self.settings.admin_id, text, reply_markup=order_actions(order.id))
+        await self.notify_admins(text, reply_markup=order_actions(order.id))
 
     async def attach_photo(self, funpay_order_id: str, file_id: str | None, photo_path: str | None) -> Order | None:
         async with self.session_factory() as session:

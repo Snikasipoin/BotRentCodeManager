@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from typing import Any, Awaitable, Callable, Dict
 
@@ -16,10 +16,10 @@ class AdminOnlyMiddleware(BaseMiddleware):
             user_id = event.from_user.id
         if isinstance(event, CallbackQuery) and event.from_user:
             user_id = event.from_user.id
-        if user_id != settings.admin_id:
+        if user_id is None or not settings.is_admin(user_id):
             if isinstance(event, Message):
-                await event.answer("Доступ запрещен")
+                await event.answer("Доступ запрещён")
             elif isinstance(event, CallbackQuery):
-                await event.answer("Доступ запрещен", show_alert=True)
+                await event.answer("Доступ запрещён", show_alert=True)
             return None
         return await handler(event, data)

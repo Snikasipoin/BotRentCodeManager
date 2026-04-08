@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from functools import lru_cache
 from zoneinfo import ZoneInfo
@@ -10,7 +10,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     bot_token: str = Field(alias="BOT_TOKEN")
-    admin_id: int = Field(alias="ADMIN_ID")
+    admin_id: list[int] = Field(alias="ADMIN_ID")
     database_url: str = Field(default="sqlite+aiosqlite:///./data/bot.db", alias="DATABASE_URL")
     encryption_key: str = Field(alias="ENCRYPTION_KEY")
     funpay_golden_key: str = Field(alias="FUNPAY_GOLDEN_KEY")
@@ -32,6 +32,37 @@ class Settings(BaseSettings):
         normalized = value.strip()
         Fernet(normalized.encode())
         return normalized
+
+    @field_validator("admin_id", mode="before")
+    @classmethod
+    def validate_admin_ids(cls, value: object) -> list[int]:
+        def normalize_item(item: object) -> int:
+            if isinstance(item, int):
+                return item
+            if isinstance(item, str):
+                normalized = item.strip()
+                if not normalized:
+                    raise ValueError("ADMIN_ID must not contain empty values")
+                try:
+                    return int(normalized)
+                except ValueError as exc:
+                    raise ValueError("ADMIN_ID must contain only numeric Telegram IDs") from exc
+            raise ValueError("ADMIN_ID must contain only numeric Telegram IDs")
+
+        if isinstance(value, list):
+            admins = [normalize_item(item) for item in value]
+        elif isinstance(value, str):
+            normalized = value.strip()
+            if not normalized:
+                raise ValueError("ADMIN_ID must not be empty")
+            admins = [normalize_item(part) for part in normalized.split(",")]
+        else:
+            admins = [normalize_item(value)]
+
+        unique_admins = list(dict.fromkeys(admins))
+        if not unique_admins:
+            raise ValueError("ADMIN_ID must contain at least one Telegram ID")
+        return unique_admins
 
     @field_validator("funpay_poll_interval", "email_imap_timeout")
     @classmethod

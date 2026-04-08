@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from pathlib import Path
 
@@ -45,9 +45,8 @@ class FunPayEventHandler:
                 photo_path = await self.client.download_photo(payload.photo_url, str(target))
             order = await self.processor.attach_photo(payload.order_id, payload.file_id, photo_path)
             if order:
-                await self.processor.telegram_bot.send_message(
-                    self.processor.settings.admin_id,
-                    f"Buyer sent a photo for order {order.funpay_order_id}. Review and choose an action.",
+                await self.processor.notify_admins(
+                    f"Покупатель отправил фото для заказа {order.funpay_order_id}. Проверьте и выберите действие.",
                     reply_markup=order_actions(order.id),
                 )
             return

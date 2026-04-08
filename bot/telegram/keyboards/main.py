@@ -7,6 +7,7 @@ ACCOUNTS = "Мои аккаунты"
 ORDERS = "Активные заказы"
 HISTORY = "История заказов"
 SETTINGS = "Настройки"
+MESSAGES = "Сообщения"
 SEARCH = "Поиск"
 STATS = "/stats"
 
@@ -38,7 +39,8 @@ def main_menu() -> ReplyKeyboardMarkup:
         keyboard=[
             [KeyboardButton(text=DASHBOARD), KeyboardButton(text=ACCOUNTS)],
             [KeyboardButton(text=ORDERS), KeyboardButton(text=HISTORY)],
-            [KeyboardButton(text=SETTINGS), KeyboardButton(text=SEARCH)],
+            [KeyboardButton(text=SETTINGS), KeyboardButton(text=MESSAGES)],
+            [KeyboardButton(text=SEARCH)],
         ],
         resize_keyboard=True,
     )
@@ -84,6 +86,24 @@ def automation_actions() -> InlineKeyboardMarkup:
     for field, label in AUTOMATION_FIELDS:
         builder.button(text=label, callback_data=f"automation:edit:{field}")
     builder.button(text="⬅️ В настройки", callback_data="automation:back")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def dialogs_list_keyboard(items: list[tuple[int, str, str, str]]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for chat_id, title, last_message, updated_at in items:
+        builder.button(text=f"{title} | {last_message[:25]}", callback_data=f"dialog:view:{chat_id}")
+    builder.button(text="⬅️ Главное меню", callback_data="menu:main")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def dialog_actions(chat_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="✉️ Ответить", callback_data=f"dialog:reply:{chat_id}")
+    builder.button(text="🔄 Обновить", callback_data=f"dialog:view:{chat_id}")
+    builder.button(text="⬅️ К списку", callback_data="dialog:list")
     builder.adjust(1)
     return builder.as_markup()
 

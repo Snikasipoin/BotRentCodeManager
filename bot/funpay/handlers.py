@@ -5,16 +5,16 @@ from pathlib import Path
 from loguru import logger
 
 from bot.funpay.client import FunPayClient, NewMessagePayload, NewOrderPayload
+from bot.services.funpay_dialogs import FunPayDialogService
 from bot.services.order_processor import OrderProcessor
-from bot.services.runtime_config import RuntimeConfigService
 from bot.telegram.keyboards.main import order_actions
 
 
 class FunPayEventHandler:
-    def __init__(self, client: FunPayClient, processor: OrderProcessor, config_service: RuntimeConfigService) -> None:
+    def __init__(self, client: FunPayClient, processor: OrderProcessor, dialog_service: FunPayDialogService) -> None:
         self.client = client
         self.processor = processor
-        self.config_service = config_service
+        self.dialog_service = dialog_service
         self.photos_dir = Path("storage/photos")
         self.photos_dir.mkdir(parents=True, exist_ok=True)
 
@@ -49,14 +49,19 @@ class FunPayEventHandler:
                     f"Покупатель отправил фото для заказа {order.funpay_order_id}. Проверьте и выберите действие.",
                     reply_markup=order_actions(order.id),
                 )
+            await self.dialog_service.record_incoming(payload.chat_id, payload.text, has_photo=True, photo_path=photo_path)
             return
 
+        await self.dialog_service.record_incoming(payload.chat_id, payload.text, has_photo=False)
+
         lowered = payload.text.lower().strip()
-        triggers = await self.config_service.get_code_triggers()
-        if any(trigger in lowered for trigger in triggers):
+        triggers = await self.processor.config_service.get_code_triggers()
+        if triggers and any(trigger in lowered for trigger in triggers):
             answer = await self.processor.handle_code_request(payload.chat_id)
             await self.client.send_text(payload.chat_id, answer)
+            await self.dialog_service.record_outgoing(payload.chat_id, answer)
             return
 
         if "review" in lowered or "thanks" in lowered or "отзыв" in lowered:
             logger.info("Potential review-like message received: {}", payload.text)
+

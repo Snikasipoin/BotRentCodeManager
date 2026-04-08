@@ -11,6 +11,7 @@ from bot.config import get_settings
 from bot.db.enums import AccountStatus, OrderStatus
 from bot.db.models import Account, Order, OrderLog
 from bot.services.email_checker import EmailChecker
+from bot.services.funpay_dialogs import FunPayDialogService
 from bot.services.runtime_config import RuntimeConfigService
 from bot.services.scheduler import SchedulerService
 from bot.telegram.keyboards.main import order_actions
@@ -19,18 +20,24 @@ from bot.utils.helpers import fmt_dt, fmt_timedelta_minutes
 
 
 class OrderProcessor:
-    def __init__(self, session_factory: async_sessionmaker[AsyncSession], scheduler: SchedulerService, telegram_bot, funpay_client, config_service: RuntimeConfigService) -> None:
+    def __init__(self, session_factory: async_sessionmaker[AsyncSession], scheduler: SchedulerService, telegram_bot, funpay_client, config_service: RuntimeConfigService, dialog_service: FunPayDialogService) -> None:
         self.session_factory = session_factory
         self.scheduler = scheduler
         self.telegram_bot = telegram_bot
         self.funpay_client = funpay_client
         self.config_service = config_service
+        self.dialog_service = dialog_service
         self.settings = get_settings()
         self.email_checker = EmailChecker()
         self.cipher = Cipher()
 
     async def log(self, session: AsyncSession, order: Order, source: str, action: str, message: str, payload: str | None = None) -> None:
         session.add(OrderLog(order_id=order.id, source=source, action=action, message=message, payload_json=payload))
+
+    async def send_funpay_message(self, chat_id: int | None, text: str) -> None:
+        await self.funpay_client.send_text(chat_id, text)
+        if chat_id:
+            await self.dialog_service.record_outgoing(chat_id, text)
 
     async def create_order_from_funpay(self, funpay_order_id: str, chat_id: int, buyer_nickname: str, rental_minutes: int) -> Order:
         async with self.session_factory() as session:
@@ -51,7 +58,8 @@ class OrderProcessor:
             await session.refresh(order)
 
         photo_request_text = await self.config_service.get_text("funpay_photo_request_text")
-        await self.funpay_client.send_text(chat_id, photo_request_text)
+        await self.send_funpay_message(chat_id, photo_request_text)
+        await self.dialog_service.ensure_dialog(chat_id, buyer_nickname=buyer_nickname, order=order)
         await self.notify_admin_new_order(order)
         return order
 
@@ -119,7 +127,7 @@ class OrderProcessor:
             order.status = OrderStatus.PHOTO_REJECTED
             await self.log(session, order, "telegram", "photo_rejected", reason)
             await session.commit()
-        await self.funpay_client.send_text(order.funpay_chat_id, f"Photo check failed. {reason}")
+        await self.send_funpay_message(order.funpay_chat_id, f"Photo check failed. {reason}")
         return order
 
     async def send_credentials(self, order: Order, account: Account) -> None:
@@ -136,7 +144,7 @@ class OrderProcessor:
                 f"Faceit password: {faceit_password}",
             ])
         parts.append(f"Rent active until: {fmt_dt(order.end_time)}")
-        await self.funpay_client.send_text(order.funpay_chat_id, "\n".join(parts))
+        await self.send_funpay_message(order.funpay_chat_id, "\n".join(parts))
 
     async def schedule_order_jobs(self, order_id: int, start_time: datetime, end_time: datetime) -> None:
         reminder_at = start_time + timedelta(minutes=self.settings.reminder_after_minutes)
@@ -161,7 +169,7 @@ class OrderProcessor:
             await self.log(session, order, "scheduler", "reminder", "Review reminder sent")
             await session.commit()
         reminder_text = await self.config_service.get_text("funpay_review_reminder_text")
-        await self.funpay_client.send_text(order.funpay_chat_id, reminder_text)
+        await self.send_funpay_message(order.funpay_chat_id, reminder_text)
 
     async def send_expiring_warning(self, order_id: int) -> None:
         async with self.session_factory() as session:
@@ -173,7 +181,7 @@ class OrderProcessor:
             await session.commit()
         warning_template = await self.config_service.get_text("funpay_warning_text")
         warning_text = warning_template.format(minutes=self.settings.expiring_warning_minutes)
-        await self.funpay_client.send_text(order.funpay_chat_id, warning_text)
+        await self.send_funpay_message(order.funpay_chat_id, warning_text)
 
     async def finish_order(self, order_id: int) -> None:
         async with self.session_factory() as session:
@@ -190,7 +198,7 @@ class OrderProcessor:
             await session.commit()
         if order.funpay_chat_id:
             finish_text = await self.config_service.get_text("funpay_finish_text")
-            await self.funpay_client.send_text(order.funpay_chat_id, finish_text)
+            await self.send_funpay_message(order.funpay_chat_id, finish_text)
 
     async def handle_code_request(self, chat_id: int) -> str:
         async with self.session_factory() as session:
@@ -220,4 +228,4 @@ class OrderProcessor:
             await session.commit()
             await self.schedule_order_jobs(order.id, order.start_time or datetime.now(timezone.utc), order.end_time)
         if order.funpay_chat_id:
-            await self.funpay_client.send_text(order.funpay_chat_id, f"Thanks for the review. {self.settings.review_bonus_minutes} minutes were added.")
+            await self.send_funpay_message(order.funpay_chat_id, f"Thanks for the review. {self.settings.review_bonus_minutes} minutes were added.")

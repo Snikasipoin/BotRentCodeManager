@@ -1,4 +1,6 @@
-﻿from aiogram.fsm.state import State, StatesGroup
+﻿from __future__ import annotations
+
+from aiogram.fsm.state import State, StatesGroup
 
 
 class AccountForm(StatesGroup):
@@ -20,3 +22,7 @@ class AccountEditForm(StatesGroup):
 
 class AutomationForm(StatesGroup):
     value = State()
+
+
+class DialogReplyForm(StatesGroup):
+    text = State()

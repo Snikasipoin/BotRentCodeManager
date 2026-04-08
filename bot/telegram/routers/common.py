@@ -6,7 +6,7 @@ from aiogram.types import CallbackQuery, Message
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 
 from bot.services.stats import StatsService
-from bot.telegram.keyboards.main import ACCOUNTS, DASHBOARD, HISTORY, ORDERS, SEARCH, SETTINGS, dashboard_actions, main_menu
+from bot.telegram.keyboards.main import ACCOUNTS, DASHBOARD, HISTORY, MESSAGES, ORDERS, SEARCH, SETTINGS, dashboard_actions, main_menu
 
 router = Router()
 
@@ -70,6 +70,12 @@ async def dashboard_stats(callback: CallbackQuery, session_factory: async_sessio
     await callback.message.answer(text, reply_markup=main_menu())
 
 
-@router.message(F.text.in_({ACCOUNTS, ORDERS, HISTORY, SETTINGS, SEARCH}))
+@router.callback_query(F.data == "menu:main")
+async def menu_main(callback: CallbackQuery) -> None:
+    await callback.answer()
+    await callback.message.answer("Главное меню", reply_markup=main_menu())
+
+
+@router.message(F.text.in_({ACCOUNTS, ORDERS, HISTORY, SETTINGS, MESSAGES, SEARCH}))
 async def section_redirect(message: Message) -> None:
     await message.answer("Открой нужный раздел соответствующей кнопкой или командой.", reply_markup=main_menu())

@@ -17,11 +17,15 @@ from loguru import logger
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from bot.config import get_settings
+from bot.db.app_config import BotSetting
 from bot.db.base import Base
+from bot.db.dialogs import FunPayDialog, FunPayDialogMessage
+from bot.db.models import Account, Order, OrderLog
 from bot.db.session import get_engine, get_session_factory
 from bot.funpay.client import FunPayClient
 from bot.funpay.handlers import FunPayEventHandler
 from bot.middlewares.admin import AdminOnlyMiddleware
+from bot.services.funpay_dialogs import FunPayDialogService
 from bot.services.order_processor import OrderProcessor
 from bot.services.runtime_config import RuntimeConfigService
 from bot.services.scheduler import SchedulerService
@@ -59,8 +63,9 @@ async def main() -> None:
     scheduler.start()
     stats_service = StatsService()
     funpay_client = FunPayClient()
-    order_processor = OrderProcessor(session_factory, scheduler, bot, funpay_client, config_service)
-    funpay_handler = FunPayEventHandler(funpay_client, order_processor, config_service)
+    dialog_service = FunPayDialogService(session_factory, funpay_client)
+    order_processor = OrderProcessor(session_factory, scheduler, bot, funpay_client, config_service, dialog_service)
+    funpay_handler = FunPayEventHandler(funpay_client, order_processor, dialog_service)
 
     await funpay_client.start()
     await order_processor.restore_schedules()
@@ -75,6 +80,7 @@ async def main() -> None:
             order_processor=order_processor,
             funpay_client=funpay_client,
             config_service=config_service,
+            dialog_service=dialog_service,
         )
     finally:
         funpay_task.cancel()

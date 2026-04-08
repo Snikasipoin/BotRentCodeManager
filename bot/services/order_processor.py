@@ -59,7 +59,12 @@ class OrderProcessor:
 
         photo_request_text = await self.config_service.get_text("funpay_photo_request_text")
         await self.send_funpay_message(chat_id, photo_request_text)
-        await self.dialog_service.ensure_dialog(chat_id, buyer_nickname=buyer_nickname, order=order)
+        if chat_id:
+            await self.dialog_service.ensure_dialog(chat_id, buyer_nickname=buyer_nickname, order=order)
+        else:
+            await self.notify_admins(
+                f"Не удалось автоматически определить chat_id для заказа {order.funpay_order_id}. Проверьте FunPayAPI payload и buyer nickname.",
+            )
         await self.notify_admin_new_order(order)
         return order
 
@@ -229,3 +234,4 @@ class OrderProcessor:
             await self.schedule_order_jobs(order.id, order.start_time or datetime.now(timezone.utc), order.end_time)
         if order.funpay_chat_id:
             await self.send_funpay_message(order.funpay_chat_id, f"Thanks for the review. {self.settings.review_bonus_minutes} minutes were added.")
+

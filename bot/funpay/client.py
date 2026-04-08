@@ -92,7 +92,13 @@ class FunPayClient:
 
     @staticmethod
     def _pick_attr(obj: Any, *names: str, default: Any = None) -> Any:
+        if obj is None:
+            return default
         for name in names:
+            if isinstance(obj, dict) and name in obj:
+                value = obj.get(name)
+                if value not in (None, "", []):
+                    return value
             value = getattr(obj, name, None)
             if value not in (None, "", []):
                 return value
@@ -222,3 +228,4 @@ class FunPayClient:
         with open(target_path, "wb") as file:
             file.write(content)
         return target_path
+

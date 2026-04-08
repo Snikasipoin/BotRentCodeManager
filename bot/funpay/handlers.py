@@ -54,6 +54,7 @@ class FunPayEventHandler:
             chat_id=payload.chat_id,
             buyer_nickname=payload.buyer_nickname,
             rental_minutes=payload.rental_minutes,
+            description=payload.description,
         )
 
     async def handle_new_message(self, payload: NewMessagePayload) -> None:
@@ -105,3 +106,5 @@ class FunPayEventHandler:
 
         if "review" in lowered or "thanks" in lowered or "отзыв" in lowered:
             logger.info("Potential review-like message received: {}", payload.text)
+
+

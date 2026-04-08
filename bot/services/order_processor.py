@@ -39,7 +39,7 @@ class OrderProcessor:
         if chat_id:
             await self.dialog_service.record_outgoing(chat_id, text)
 
-    async def create_order_from_funpay(self, funpay_order_id: str, chat_id: int, buyer_nickname: str, rental_minutes: int) -> Order:
+    async def create_order_from_funpay(self, funpay_order_id: str, chat_id: int, buyer_nickname: str, rental_minutes: int, description: str | None = None) -> Order:
         async with self.session_factory() as session:
             existing = await session.scalar(select(Order).where(Order.funpay_order_id == funpay_order_id))
             if existing:
@@ -53,7 +53,7 @@ class OrderProcessor:
             )
             session.add(order)
             await session.flush()
-            await self.log(session, order, "funpay", "new_order", "New order created from FunPay")
+            await self.log(session, order, "funpay", "new_order", "New order created from FunPay", payload=description)
             await session.commit()
             await session.refresh(order)
 
@@ -65,7 +65,7 @@ class OrderProcessor:
             await self.notify_admins(
                 f"Не удалось автоматически определить chat_id для заказа {order.funpay_order_id}. Проверьте FunPayAPI payload и buyer nickname.",
             )
-        await self.notify_admin_new_order(order)
+        await self.notify_admin_new_order(order, description=description)
         return order
 
     async def notify_admins(self, text: str, reply_markup=None) -> None:
@@ -75,11 +75,15 @@ class OrderProcessor:
             except Exception as exc:
                 logger.warning("Failed to notify admin {}: {}", admin_id, exc)
 
-    async def notify_admin_new_order(self, order: Order) -> None:
+    async def notify_admin_new_order(self, order: Order, description: str | None = None) -> None:
+        received_at = fmt_dt(order.created_at) if order.created_at else "unknown"
         text = (
-            "New FunPay order\n"
-            f"Order: {order.funpay_order_id}\n"
+            "🆕 New FunPay order\n"
+            f"Order ID: {order.funpay_order_id or 'unknown'}\n"
             f"Buyer: {order.buyer_nickname}\n"
+            f"FunPay chat: {order.funpay_chat_id or 'not resolved'}\n"
+            f"Announcement: {description or 'unknown'}\n"
+            f"Received at: {received_at}\n"
             f"Duration: {fmt_timedelta_minutes(order.rental_minutes)}\n"
             f"Status: {order.status.value}"
         )
@@ -234,4 +238,6 @@ class OrderProcessor:
             await self.schedule_order_jobs(order.id, order.start_time or datetime.now(timezone.utc), order.end_time)
         if order.funpay_chat_id:
             await self.send_funpay_message(order.funpay_chat_id, f"Thanks for the review. {self.settings.review_bonus_minutes} minutes were added.")
+
+
 

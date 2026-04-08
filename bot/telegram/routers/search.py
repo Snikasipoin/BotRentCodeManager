@@ -15,7 +15,7 @@ router = Router()
 @router.message(Command("search"))
 @router.message(F.text == SEARCH)
 async def search_hint(message: Message) -> None:
-    await message.answer("Отправь /find <текст> для поиска по заказам и аккаунтам.")
+    await message.answer("Используй /find <текст> для поиска по заказам и аккаунтам.")
     await message.answer("Главное меню", reply_markup=main_menu())
 
 

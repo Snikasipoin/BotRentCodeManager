@@ -16,9 +16,9 @@ async def settings_menu(message: Message) -> None:
     text = (
         "⚙️ Настройки\n\n"
         f"Admin ID: {settings.admin_id}\n"
-        f"Redis: {settings.redis_url}\n"
         f"DB: {settings.database_url}\n"
-        f"FunPay poll interval: {settings.funpay_poll_interval} сек."
+        f"FunPay poll interval: {settings.funpay_poll_interval} сек.\n"
+        f"Time zone: {settings.timezone_name}"
     )
     await message.answer(text, reply_markup=settings_actions())
 
@@ -26,7 +26,7 @@ async def settings_menu(message: Message) -> None:
 @router.callback_query(F.data == "settings:env")
 async def settings_env(callback: CallbackQuery) -> None:
     await callback.answer()
-    await callback.message.answer("Проверь .env: BOT_TOKEN, ADMIN_ID, DATABASE_URL, REDIS_URL, ENCRYPTION_KEY, FUNPAY_GOLDEN_KEY")
+    await callback.message.answer("Проверь .env: BOT_TOKEN, ADMIN_ID, DATABASE_URL, ENCRYPTION_KEY, FUNPAY_GOLDEN_KEY, FUNPAY_USER_AGENT, FUNPAY_POLL_INTERVAL, EMAIL_IMAP_TIMEOUT, REVIEW_BONUS_MINUTES, REMINDER_AFTER_MINUTES, EXPIRING_WARNING_MINUTES, TZ, LOG_LEVEL")
 
 
 @router.callback_query(F.data == "settings:funpay")

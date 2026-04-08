@@ -1,6 +1,6 @@
 # Переменные окружения для деплоя
 
-Ниже список значений, которые нужно добавить в личном кабинете хостинга / деплоя.
+Ниже список значений, которые нужно добавить в личном кабинете хостинга.
 
 ## Обязательные переменные
 
@@ -21,19 +21,11 @@ ADMIN_ID=123456789
 ```
 
 ### `DATABASE_URL`
-Строка подключения к PostgreSQL.
+Строка подключения к локальной SQLite-базе внутри контейнера.
 
 Пример:
 ```env
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/cs2_rent_bot
-```
-
-### `REDIS_URL`
-Строка подключения к Redis.
-
-Пример:
-```env
-REDIS_URL=redis://redis:6379/0
+DATABASE_URL=sqlite+aiosqlite:///./data/bot.db
 ```
 
 ### `ENCRYPTION_KEY`
@@ -114,7 +106,6 @@ LOG_LEVEL=DEBUG
 - `BOT_TOKEN`
 - `ADMIN_ID`
 - `DATABASE_URL`
-- `REDIS_URL`
 - `ENCRYPTION_KEY`
 - `FUNPAY_GOLDEN_KEY`
 - `FUNPAY_USER_AGENT`

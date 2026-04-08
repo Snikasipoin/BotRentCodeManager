@@ -4,19 +4,19 @@
 
 ## Что в проекте
 
-- `bot/` — основное приложение
-- `alembic/` — миграции БД
-- `.env.example` — пример конфигурации
-- `Dockerfile` и `docker-compose.yml` — контейнеризация
-- `docs/DEPLOY_ENV.md` — что заполнять в переменных окружения на хостинге
-- `docs/OUTLOOK_IMAP_SETUP.md` — как настраивать Outlook / Hotmail для получения кодов
+- `bot/` - основное приложение
+- `alembic/` - миграции БД
+- `.env.example` - пример конфигурации
+- `Dockerfile` и `docker-compose.yml` - контейнеризация
+- `docs/DEPLOY_ENV.md` - что заполнять в переменных окружения на хостинге
+- `docs/OUTLOOK_IMAP_SETUP.md` - как настраивать Outlook / Hotmail для получения кодов
 
 ## Основной стек
 
 - Python 3.12+
 - aiogram 3.x
 - SQLAlchemy 2.x + Alembic
-- Redis
+- SQLite внутри контейнера
 - APScheduler
 - FunPayAPI
 - imap-tools
@@ -33,7 +33,7 @@
    python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
    ```
 3. Заполни `.env`.
-4. Подними сервисы:
+4. Подними сервис:
    ```bash
    docker compose up --build -d
    ```

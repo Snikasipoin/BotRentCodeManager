@@ -1,4 +1,4 @@
-﻿from __future__ import annotations
+from __future__ import annotations
 
 import asyncio
 import sys
@@ -12,9 +12,8 @@ if __package__ is None or __package__ == "":
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
-from aiogram.fsm.storage.redis import RedisStorage
+from aiogram.fsm.storage.memory import MemoryStorage
 from loguru import logger
-from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import async_sessionmaker
 
 from bot.config import get_settings
@@ -42,8 +41,7 @@ async def main() -> None:
 
     await create_schema()
 
-    redis = Redis.from_url(settings.redis_url)
-    storage = RedisStorage(redis=redis)
+    storage = MemoryStorage()
     bot = Bot(token=settings.bot_token, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
     dp = Dispatcher(storage=storage)
 
@@ -78,7 +76,6 @@ async def main() -> None:
         await funpay_client.stop()
         await scheduler.shutdown()
         await storage.close()
-        await redis.close()
         await bot.session.close()
         await get_engine().dispose()
 

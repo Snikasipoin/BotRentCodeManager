@@ -11,8 +11,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     bot_token: str = Field(alias="BOT_TOKEN")
     admin_id: int = Field(alias="ADMIN_ID")
-    database_url: str = Field(alias="DATABASE_URL")
-    redis_url: str = Field(alias="REDIS_URL")
+    database_url: str = Field(default="sqlite+aiosqlite:///./data/bot.db", alias="DATABASE_URL")
     encryption_key: str = Field(alias="ENCRYPTION_KEY")
     funpay_golden_key: str = Field(alias="FUNPAY_GOLDEN_KEY")
     funpay_user_agent: str = Field(default="Mozilla/5.0", alias="FUNPAY_USER_AGENT")

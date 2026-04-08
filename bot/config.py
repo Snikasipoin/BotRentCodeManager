@@ -26,6 +26,16 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
+    @field_validator("database_url")
+    @classmethod
+    def validate_database_url(cls, value: str) -> str:
+        normalized = value.strip()
+        if not normalized.startswith("sqlite+aiosqlite:///"):
+            raise ValueError(
+                "DATABASE_URL must use SQLite for this deployment. Use sqlite+aiosqlite:///./data/bot.db"
+            )
+        return normalized
+
     @field_validator("encryption_key")
     @classmethod
     def validate_fernet_key(cls, value: str) -> str:

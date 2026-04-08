@@ -1,4 +1,4 @@
-from aiogram.fsm.state import State, StatesGroup
+﻿from aiogram.fsm.state import State, StatesGroup
 
 
 class AccountForm(StatesGroup):
@@ -12,3 +12,11 @@ class AccountForm(StatesGroup):
     email_imap_host = State()
     email_imap_port = State()
     notes = State()
+
+
+class AccountEditForm(StatesGroup):
+    value = State()
+
+
+class AutomationForm(StatesGroup):
+    value = State()

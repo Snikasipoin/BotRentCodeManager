@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 import asyncio
 import sys
@@ -23,6 +23,7 @@ from bot.funpay.client import FunPayClient
 from bot.funpay.handlers import FunPayEventHandler
 from bot.middlewares.admin import AdminOnlyMiddleware
 from bot.services.order_processor import OrderProcessor
+from bot.services.runtime_config import RuntimeConfigService
 from bot.services.scheduler import SchedulerService
 from bot.services.stats import StatsService
 from bot.telegram.routers import setup_routers
@@ -51,12 +52,15 @@ async def main() -> None:
     dp.include_router(root_router)
 
     session_factory: async_sessionmaker = get_session_factory()
+    config_service = RuntimeConfigService(session_factory)
+    await config_service.ensure_defaults()
+
     scheduler = SchedulerService()
     scheduler.start()
     stats_service = StatsService()
     funpay_client = FunPayClient()
-    order_processor = OrderProcessor(session_factory, scheduler, bot, funpay_client)
-    funpay_handler = FunPayEventHandler(funpay_client, order_processor)
+    order_processor = OrderProcessor(session_factory, scheduler, bot, funpay_client, config_service)
+    funpay_handler = FunPayEventHandler(funpay_client, order_processor, config_service)
 
     await funpay_client.start()
     await order_processor.restore_schedules()
@@ -70,6 +74,7 @@ async def main() -> None:
             stats_service=stats_service,
             order_processor=order_processor,
             funpay_client=funpay_client,
+            config_service=config_service,
         )
     finally:
         funpay_task.cancel()

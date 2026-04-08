@@ -8,8 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from bot.db.models import Account
-from bot.telegram.keyboards.main import ACCOUNTS, account_actions, accounts_list_keyboard, main_menu
-from bot.telegram.states.account import AccountForm
+from bot.telegram.keyboards.main import ACCOUNTS, account_actions, account_edit_actions, accounts_list_keyboard, main_menu
+from bot.telegram.states.account import AccountEditForm, AccountForm
 from bot.utils.encryption import Cipher
 
 router = Router()
@@ -23,6 +23,7 @@ def _format_account(account: Account) -> str:
         f"Steam: {account.steam_login}\n"
         f"Faceit: {account.faceit_login or '-'}\n"
         f"Email: {account.email}\n"
+        f"IMAP: {account.email_imap_host}:{account.email_imap_port}\n"
         f"Статус: {account.status.value}\n"
         f"Заметки: {account.notes or '-'}"
     )
@@ -162,6 +163,73 @@ async def account_view(callback: CallbackQuery, session_factory: async_sessionma
     await callback.message.answer(_format_account(account), reply_markup=account_actions(account.id))
 
 
+@router.callback_query(F.data.startswith("account:editmenu:"))
+async def account_edit_menu(callback: CallbackQuery) -> None:
+    account_id = int(callback.data.split(":")[-1])
+    await callback.answer()
+    await callback.message.answer("Выбери поле для редактирования", reply_markup=account_edit_actions(account_id))
+
+
+@router.callback_query(F.data.startswith("account:edit:"))
+async def account_edit(callback: CallbackQuery, state: FSMContext) -> None:
+    _, _, account_id, field = callback.data.split(":", 3)
+    await state.set_state(AccountEditForm.value)
+    await state.update_data(account_id=int(account_id), field=field)
+    await callback.answer()
+    prompts = {
+        "title": "Введи новое название аккаунта",
+        "steam_login": "Введи новый Steam login",
+        "steam_password": "Введи новый Steam password",
+        "faceit_login": "Введи новый Faceit login или '-' чтобы очистить",
+        "faceit_password": "Введи новый Faceit password или '-' чтобы очистить",
+        "email": "Введи новый email",
+        "email_password": "Введи новый email password / app password",
+        "email_imap_host": "Введи новый IMAP host",
+        "email_imap_port": "Введи новый IMAP port",
+        "notes": "Введи новые заметки или '-' чтобы очистить",
+    }
+    await callback.message.answer(prompts.get(field, "Введи новое значение"))
+
+
+@router.message(AccountEditForm.value)
+async def account_edit_value(message: Message, state: FSMContext, session_factory: async_sessionmaker[AsyncSession]) -> None:
+    data = await state.get_data()
+    account_id = int(data["account_id"])
+    field = str(data["field"])
+    value = message.text.strip()
+    async with session_factory() as session:
+        account = await session.get(Account, account_id)
+        if not account:
+            await state.clear()
+            await message.answer("Аккаунт не найден", reply_markup=main_menu())
+            return
+        if field == "title":
+            account.title = value
+        elif field == "steam_login":
+            account.steam_login = value
+        elif field == "steam_password":
+            account.steam_password_encrypted = _cipher.encrypt(value) or ""
+        elif field == "faceit_login":
+            account.faceit_login = None if value == "-" else value
+        elif field == "faceit_password":
+            account.faceit_password_encrypted = None if value == "-" else _cipher.encrypt(value)
+        elif field == "email":
+            account.email = value
+        elif field == "email_password":
+            account.email_password_encrypted = _cipher.encrypt(value) or ""
+        elif field == "email_imap_host":
+            account.email_imap_host = value
+        elif field == "email_imap_port":
+            account.email_imap_port = int(value)
+        elif field == "notes":
+            account.notes = None if value == "-" else value
+        await session.commit()
+        await session.refresh(account)
+    await state.clear()
+    await message.answer("Аккаунт обновлён.", reply_markup=main_menu())
+    await message.answer(_format_account(account), reply_markup=account_actions(account.id))
+
+
 @router.callback_query(F.data.startswith("account:delete:"))
 async def account_delete(callback: CallbackQuery, session_factory: async_sessionmaker[AsyncSession]) -> None:
     account_id = int(callback.data.split(":")[-1])
@@ -172,8 +240,3 @@ async def account_delete(callback: CallbackQuery, session_factory: async_session
             await session.commit()
     await callback.answer("Удалено")
     await callback.message.answer("Аккаунт удалён.", reply_markup=main_menu())
-
-
-@router.callback_query(F.data.startswith("account:edit:"))
-async def account_edit(callback: CallbackQuery) -> None:
-    await callback.answer("Редактирование можно доработать точечно под нужные поля.")

@@ -11,6 +11,28 @@ SEARCH = "Поиск"
 STATS = "/stats"
 
 
+ACCOUNT_EDIT_FIELDS = (
+    ("title", "Название"),
+    ("steam_login", "Steam login"),
+    ("steam_password", "Steam пароль"),
+    ("faceit_login", "Faceit login"),
+    ("faceit_password", "Faceit пароль"),
+    ("email", "Email"),
+    ("email_password", "Email пароль"),
+    ("email_imap_host", "IMAP host"),
+    ("email_imap_port", "IMAP port"),
+    ("notes", "Заметки"),
+)
+
+AUTOMATION_FIELDS = (
+    ("funpay_photo_request_text", "Запрос фото"),
+    ("funpay_code_triggers", "Триггеры кода"),
+    ("funpay_review_reminder_text", "Напоминание об отзыве"),
+    ("funpay_warning_text", "Предупреждение о конце"),
+    ("funpay_finish_text", "Сообщение о завершении"),
+)
+
+
 def main_menu() -> ReplyKeyboardMarkup:
     return ReplyKeyboardMarkup(
         keyboard=[
@@ -41,9 +63,27 @@ def accounts_list_keyboard(items: list[tuple[int, str, str]]) -> InlineKeyboardM
 
 def account_actions(account_id: int) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text="✏️ Редактировать", callback_data=f"account:edit:{account_id}")
+    builder.button(text="✏️ Редактировать", callback_data=f"account:editmenu:{account_id}")
     builder.button(text="🗑 Удалить", callback_data=f"account:delete:{account_id}")
     builder.button(text="⬅️ К списку", callback_data="account:list")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def account_edit_actions(account_id: int) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for field, label in ACCOUNT_EDIT_FIELDS:
+        builder.button(text=label, callback_data=f"account:edit:{account_id}:{field}")
+    builder.button(text="⬅️ К карточке", callback_data=f"account:view:{account_id}")
+    builder.adjust(2)
+    return builder.as_markup()
+
+
+def automation_actions() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for field, label in AUTOMATION_FIELDS:
+        builder.button(text=label, callback_data=f"automation:edit:{field}")
+    builder.button(text="⬅️ В настройки", callback_data="automation:back")
     builder.adjust(1)
     return builder.as_markup()
 
@@ -61,5 +101,6 @@ def settings_actions() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="Показать env-подсказку", callback_data="settings:env")
     builder.button(text="Проверить FunPay", callback_data="settings:funpay")
+    builder.button(text="Автоответы FunPay", callback_data="settings:automation")
     builder.adjust(1)
     return builder.as_markup()

@@ -1,4 +1,4 @@
-from __future__ import annotations
+﻿from __future__ import annotations
 
 from aiogram import F, Router
 from aiogram.filters import Command
@@ -36,10 +36,8 @@ async def _list_accounts(message: Message | CallbackQuery, session_factory: asyn
     target = message.message if isinstance(message, CallbackQuery) else message
     if not items:
         await target.answer("Аккаунтов пока нет. Добавь первый аккаунт.", reply_markup=accounts_list_keyboard(items))
-        await target.answer("Главное меню", reply_markup=main_menu())
         return
     await target.answer("📋 Список аккаунтов", reply_markup=accounts_list_keyboard(items))
-    await target.answer("Главное меню", reply_markup=main_menu())
 
 
 @router.message(Command("accounts"))
@@ -240,3 +238,5 @@ async def account_delete(callback: CallbackQuery, session_factory: async_session
             await session.commit()
     await callback.answer("Удалено")
     await callback.message.answer("Аккаунт удалён.", reply_markup=main_menu())
+
+

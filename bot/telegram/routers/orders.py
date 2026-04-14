@@ -1,5 +1,6 @@
 ﻿from __future__ import annotations
 
+import asyncio
 from aiogram import F, Router
 from aiogram.filters import Command
 from aiogram.types import CallbackQuery, Message
@@ -38,33 +39,40 @@ async def orders_menu(message: Message, session_factory: async_sessionmaker[Asyn
     async with session_factory() as session:
         text, orders = await _active_orders_text(session)
     await message.answer(text)
-    for order in orders[:10]:
-        await message.answer(
+    tasks = [
+        message.answer(
             f"Заказ {order.funpay_order_id}\nПокупатель: {order.buyer_nickname}\nСрок: {fmt_timedelta_minutes(order.rental_minutes)}\nСтатус: {order.status.value}",
             reply_markup=order_actions(order.id),
         )
-    await message.answer("Главное меню", reply_markup=main_menu())
+        for order in orders[:10]
+    ]
+    if tasks:
+        await asyncio.gather(*tasks)
 
 
 @router.callback_query(F.data.startswith("order:approve:"))
 async def order_approve(callback: CallbackQuery, order_processor: OrderProcessor) -> None:
     order_id = int(callback.data.split(":")[-1])
+    await callback.answer("Обрабатываю...")
     await order_processor.approve_photo(order_id)
-    await callback.answer("Заказ подтверждён")
     await callback.message.answer(f"Заказ #{order_id} подтверждён и данные отправлены покупателю.")
 
 
 @router.callback_query(F.data.startswith("order:reject:"))
 async def order_reject(callback: CallbackQuery, order_processor: OrderProcessor) -> None:
     order_id = int(callback.data.split(":")[-1])
+    await callback.answer("Обрабатываю...")
     await order_processor.reject_photo(order_id)
-    await callback.answer("Фото отклонено")
     await callback.message.answer(f"Заказ #{order_id} отклонён.")
 
 
 @router.callback_query(F.data.startswith("order:bonus:"))
 async def order_bonus(callback: CallbackQuery, order_processor: OrderProcessor) -> None:
     order_id = int(callback.data.split(":")[-1])
+    await callback.answer("Обрабатываю...")
     await order_processor.grant_review_bonus(order_id)
-    await callback.answer("Бонус добавлен")
     await callback.message.answer(f"К заказу #{order_id} добавлено бонусное время.")
+
+
+
+

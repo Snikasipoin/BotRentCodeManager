@@ -29,7 +29,6 @@ async def render_dashboard(session_factory: async_sessionmaker[AsyncSession], st
 async def cmd_start(message: Message, session_factory: async_sessionmaker[AsyncSession], stats_service: StatsService) -> None:
     text = await render_dashboard(session_factory, stats_service)
     await message.answer(text, reply_markup=dashboard_actions())
-    await message.answer("Выбери раздел ниже.", reply_markup=main_menu())
 
 
 @router.message(Command("stats"))
@@ -51,11 +50,11 @@ async def cmd_stats(message: Message, session_factory: async_sessionmaker[AsyncS
 async def refresh_dashboard(callback: CallbackQuery, session_factory: async_sessionmaker[AsyncSession], stats_service: StatsService) -> None:
     await callback.answer("Обновлено")
     await callback.message.answer(await render_dashboard(session_factory, stats_service), reply_markup=dashboard_actions())
-    await callback.message.answer("Выбери раздел ниже.", reply_markup=main_menu())
 
 
 @router.callback_query(F.data == "dashboard:stats")
 async def dashboard_stats(callback: CallbackQuery, session_factory: async_sessionmaker[AsyncSession], stats_service: StatsService) -> None:
+    await callback.answer("Собираю статистику...")
     async with session_factory() as session:
         day = await stats_service.period_stats(session, 1)
         week = await stats_service.period_stats(session, 7)
@@ -66,7 +65,6 @@ async def dashboard_stats(callback: CallbackQuery, session_factory: async_sessio
         f"За 7 дней: заказов {week['orders']}, завершено {week['completed']}, отменено {week['cancelled']}\n"
         f"За 30 дней: заказов {month['orders']}, завершено {month['completed']}, отменено {month['cancelled']}"
     )
-    await callback.answer()
     await callback.message.answer(text, reply_markup=main_menu())
 
 
@@ -79,3 +77,7 @@ async def menu_main(callback: CallbackQuery) -> None:
 @router.message(F.text.in_({ACCOUNTS, ORDERS, HISTORY, SETTINGS, MESSAGES, SEARCH}))
 async def section_redirect(message: Message) -> None:
     await message.answer("Открой нужный раздел соответствующей кнопкой или командой.", reply_markup=main_menu())
+
+
+
+
